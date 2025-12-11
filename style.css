@@ -8,7 +8,6 @@ body {
     margin: 0;
     text-align: center;
 }
-
 .container {
     background: #fff;
     padding: 30px;
@@ -17,18 +16,15 @@ body {
     width: 90%;
     max-width: 600px;
 }
-
 h1 {
     color: #333;
 }
-
 #problem-container {
     font-size: 2.5em;
     margin: 20px 0;
     min-height: 1.5em;
     font-weight: bold;
 }
-
 #answer-input {
     font-size: 1.5em;
     padding: 10px;
@@ -39,57 +35,62 @@ h1 {
     border-radius: 5px;
     margin-bottom: 10px;
 }
-
 .info {
     margin-top: 20px;
     font-size: 1.2em;
     color: #555;
 }
-
+.small-text {
+    font-size: 0.8em;
+    color: #777;
+}
 #start-button {
     padding: 10px 20px;
     font-size: 1.2em;
+    cursor: pointer;
     border: none;
     border-radius: 5px;
-    background-color: #007BFF;
     color: #fff;
-    cursor: pointer;
+    background-color: #007BFF;
+    transition: background-color 0.3s;
 }
-
 #start-button:hover {
     background-color: #0056b3;
 }
-
+#result-container {
+    margin-top: 30px;
+    font-size: 1.5em;
+}
 .hidden {
     display: none;
 }
-
+/* 詳細結果テーブルの追加装飾 */
 #detail-results {
     margin-top: 30px;
+    font-size: 1em;
 }
-
 #detail-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
 }
-
-#detail-table th,
-#detail-table td {
+#detail-table th, #detail-table td {
     border: 1px solid #ccc;
     padding: 6px;
+    text-align: center;
 }
-
 #detail-table th {
     background-color: #f4f7fa;
 }
-
-.correct {
-    color: green;
+#detail-table td {
+    background-color: #fff;
+}
+#detail-table td:last-child {
     font-weight: bold;
 }
-
-.incorrect {
+#detail-table td.correct {
+    color: green;
+}
+#detail-table td.incorrect {
     color: red;
-    font-weight: bold;
 }
