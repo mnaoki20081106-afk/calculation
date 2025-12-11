@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>計算問題：計算20問</title>
-
-    <!-- 外部CSS -->
-    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -16,7 +14,7 @@
 
     <div id="quiz-container">
         <div id="problem-container"></div>
-        <input type="number" id="answer-input" class="hidden" placeholder="答えを入力">
+        <input type="number" id="answer-input" class="hidden" placeholder="答えを入力" autofocus>
         <button id="start-button">開始</button>
     </div>
 
@@ -27,7 +25,6 @@
         <p id="accuracy-rate"></p>
     </div>
 
-    <!-- 詳細結果 -->
     <div id="detail-results" class="hidden">
         <h3>詳細結果</h3>
         <table id="detail-table">
@@ -63,16 +60,15 @@
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    // 問題生成
+    // 問題生成するやつ
     function generateProblems() {
         quizData.length = 0;
 
-        // 1〜5：二桁＋三桁 / 三桁−二桁
+        // 1. 二桁 + 三桁、三桁 - 二桁 (1-5問目)
         for (let i = 0; i < 5; i++) {
             const num1 = getRandomInt(10, 99);
             const num2 = getRandomInt(100, 999);
             const operator = Math.random() < 0.5 ? '+' : '-';
-
             let problem, answer;
             if (operator === '+') {
                 problem = `${num1} + ${num2}`;
@@ -84,49 +80,48 @@
             quizData.push({ problem, answer });
         }
 
-        // 6〜10：三桁 ± 三桁
+        // 2. 三桁 + 三桁 (6-10問目)
         for (let i = 0; i < 5; i++) {
             const num1 = getRandomInt(100, 999);
             const num2 = getRandomInt(100, 999);
             const operator = Math.random() < 0.5 ? '+' : '-';
-            quizData.push({
-                problem: `${num1} ${operator} ${num2}`,
-                answer: operator === '+' ? num1 + num2 : num1 - num2
-            });
+            const problem = `${num1} ${operator} ${num2}`;
+            const answer = operator === '+' ? num1 + num2 : num1 - num2;
+            quizData.push({ problem, answer });
         }
 
-        // 11〜15：二桁 × 一桁
+        // 3. 二桁 × 一桁 (11-15問目)
         for (let i = 0; i < 5; i++) {
             const num1 = getRandomInt(10, 99);
-            const num2 = getRandomInt(2, 9);
-            quizData.push({
-                problem: `${num1} × ${num2}`,
-                answer: num1 * num2
-            });
+            const num2 = getRandomInt(2, 9); // 一桁の数
+            const problem = `${num1} × ${num2}`;
+            const answer = num1 * num2;
+            quizData.push({ problem, answer });
         }
 
-        // 16〜20：三桁 ÷ 二桁
+        // 4. 三桁 ÷ 二桁 (16-20問目)
         for (let i = 0; i < 5; i++) {
-            let num1, num2, q;
+            let num1, num2, quotient;
             do {
-                q = getRandomInt(2, 20);
-            } while (q === 10);
+                quotient = getRandomInt(2, 20);
+            } while (quotient === 10); // 答が10になるのを避ける
 
             do {
                 num2 = getRandomInt(10, 99);
-                num1 = num2 * q;
+                num1 = num2 * quotient;
             } while (num1 < 100 || num1 > 999);
 
-            quizData.push({
-                problem: `${num1} ÷ ${num2}`,
-                answer: q
-            });
+            const problem = `${num1} ÷ ${num2}`;
+            const answer = quotient; // num1 / num2 と同じ
+            quizData.push({ problem, answer });
         }
     }
 
+    // 問題表示するやつ
     function displayProblem() {
         if (currentProblemIndex < quizData.length) {
-            problemContainer.textContent = quizData[currentProblemIndex].problem;
+            const problem = quizData[currentProblemIndex];
+            problemContainer.textContent = problem.problem;
             statusInfo.textContent = `第 ${currentProblemIndex + 1} 問 / 20 問`;
             answerInput.value = '';
             answerInput.focus();
@@ -135,32 +130,48 @@
         }
     }
 
+    // 開始ボタン
     startButton.addEventListener('click', () => {
         generateProblems();
         currentProblemIndex = 0;
         startButton.classList.add('hidden');
         answerInput.classList.remove('hidden');
         mainHeading.textContent = "問題を解いてください";
+
+        // 問題表示欄の復活
+        problemContainer.classList.remove('hidden');
+        statusInfo.classList.remove('hidden');
         resultContainer.classList.add('hidden');
         document.getElementById('detail-results').classList.add('hidden');
+
         startTime = new Date();
+
         displayProblem();
     });
 
-    answerInput.addEventListener('keydown', e => {
+    // 回答入力
+    answerInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             const userAnswer = parseInt(answerInput.value, 10);
-            const q = quizData[currentProblemIndex];
-            q.userAnswer = userAnswer;
-            q.isCorrect = userAnswer === q.answer;
+            const correctAnswer = quizData[currentProblemIndex].answer;
+
+            // 回答記録
+            quizData[currentProblemIndex].userAnswer = userAnswer;
+            quizData[currentProblemIndex].isCorrect = (userAnswer === correctAnswer);
+
             currentProblemIndex++;
             displayProblem();
         }
     });
 
+    // テスト終了
     function endQuiz() {
-        const time = (new Date() - startTime) / 1000;
-        const correct = quizData.filter(q => q.isCorrect).length;
+        const endTime = new Date();
+        const timeDiff = (endTime - startTime) / 1000;
+
+        const correctCount = quizData.filter(q => q.isCorrect).length;
+        const totalProblems = quizData.length;
+        const accuracy = (correctCount / totalProblems) * 100;
 
         answerInput.classList.add('hidden');
         problemContainer.classList.add('hidden');
@@ -168,32 +179,33 @@
         resultContainer.classList.remove('hidden');
 
         mainHeading.textContent = "テスト終了！";
-        timeTakenDisplay.textContent = `かかった時間: ${time.toFixed(2)} 秒`;
-        correctAnswersDisplay.textContent = `正解数: ${correct} / 20 問`;
-        accuracyRateDisplay.textContent = `正答率: ${(correct / 20 * 100).toFixed(1)} %`;
+        timeTakenDisplay.textContent = `かかった時間: ${timeDiff.toFixed(2)} 秒`;
+        correctAnswersDisplay.textContent = `正解数: ${correctCount} / ${totalProblems} 問`;
+        accuracyRateDisplay.textContent = `正答率: ${accuracy.toFixed(1)} %`;
 
+        // 詳細結果も表示
         showDetailResults();
     }
 
+    // 詳細結果表示する
     function showDetailResults() {
+        const detailDiv = document.getElementById('detail-results');
         const tbody = document.querySelector('#detail-table tbody');
         tbody.innerHTML = '';
-
-        quizData.forEach(q => {
+        quizData.forEach((q, i) => {
+            const mark = q.isCorrect ? '○' : '×';
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${q.problem}</td>
-                <td>${q.userAnswer ?? ''}</td>
+                <td>${q.userAnswer !== undefined ? q.userAnswer : ''}</td>
                 <td>${q.answer}</td>
-                <td class="${q.isCorrect ? 'correct' : 'incorrect'}">
-                    ${q.isCorrect ? '○' : '×'}
-                </td>
+                <td class="${q.isCorrect ? 'correct' : 'incorrect'}">${mark}</td>
             `;
             tbody.appendChild(tr);
         });
-
-        document.getElementById('detail-results').classList.remove('hidden');
+        detailDiv.classList.remove('hidden');
     }
+
 </script>
 
 </body>
