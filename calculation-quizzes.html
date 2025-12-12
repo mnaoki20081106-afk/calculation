@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>計算問題：計算20問</title>
+    <!-- 外部CSSファイルを読み込む -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -25,6 +26,7 @@
         <p id="accuracy-rate"></p>
     </div>
 
+    <!-- 詳細結果画面 -->
     <div id="detail-results" class="hidden">
         <h3>詳細結果</h3>
         <table id="detail-table">
@@ -60,7 +62,7 @@
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    // 問題生成するやつ
+    // 問題の生成ロジック
     function generateProblems() {
         quizData.length = 0;
 
@@ -117,7 +119,7 @@
         }
     }
 
-    // 問題表示するやつ
+    // 問題の表示
     function displayProblem() {
         if (currentProblemIndex < quizData.length) {
             const problem = quizData[currentProblemIndex];
@@ -187,12 +189,12 @@
         showDetailResults();
     }
 
-    // 詳細結果表示する
+    // 詳細結果テーブル表示
     function showDetailResults() {
         const detailDiv = document.getElementById('detail-results');
         const tbody = document.querySelector('#detail-table tbody');
         tbody.innerHTML = '';
-        quizData.forEach((q, i) => {
+        quizData.forEach((q) => {
             const mark = q.isCorrect ? '○' : '×';
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -205,7 +207,6 @@
         });
         detailDiv.classList.remove('hidden');
     }
-
 </script>
 
 </body>
