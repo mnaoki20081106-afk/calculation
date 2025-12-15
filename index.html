@@ -42,7 +42,17 @@
 </div>
 
 <script>
-    // 互換性向上のため、すべて var に変更
+    // ***********************************************
+    // ★★★ ここを必ず変更してください ★★★
+    // -----------------------------------------------
+    // フォームの送信先URL (ステップ1でメモした action="...")
+    var FORM_ACTION_URL = "https://docs .google.com/forms/ d/e/
+1FAIpQLScw4ay072WdaGGlpzyCQyh1MYCraAzPPHoJo6CQm-vP2_FaYA/formResponse"; 
+    // 結果データを受け取る入力フィールドID (ステップ1でメモした name="entry.XXXXXXXXXX" の数字部分)
+    var ENTRY_ID = "entry. 1790879733"; 
+    // ***********************************************
+
+
     var quizData = [];
     var problemContainer = document.getElementById('problem-container');
     var answerInput = document.getElementById('answer-input');
@@ -61,7 +71,6 @@
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    // 問題の生成ロジック
     function generateProblems() {
         quizData.length = 0;
 
@@ -75,9 +84,10 @@
                 problem = num1 + ' + ' + num2;
                 answer = num1 + num2;
             } else {
-                // 問題が負にならないように、三桁 - 二桁 の形にする
-                problem = num2 + ' - ' + num1; 
-                answer = num2 - num1;
+                var large = num2;
+                var small = num1;
+                problem = large + ' - ' + small;
+                answer = large - small;
             }
             quizData.push({ problem: problem, answer: answer });
         }
@@ -92,7 +102,6 @@
                 problem = num1 + ' + ' + num2;
                 answer = num1 + num2;
             } else {
-                // 引き算で答えが負にならないように大きい方から小さい方を引く
                 var larger = Math.max(num1, num2);
                 var smaller = Math.min(num1, num2);
                 problem = larger + ' - ' + smaller;
@@ -104,7 +113,7 @@
         // 3. 二桁 × 一桁 (11-15問目)
         for (var i = 0; i < 5; i++) {
             var num1 = getRandomInt(10, 99);
-            var num2 = getRandomInt(2, 9); // 一桁の数
+            var num2 = getRandomInt(2, 9);
             var problem = num1 + ' × ' + num2;
             var answer = num1 * num2;
             quizData.push({ problem: problem, answer: answer });
@@ -115,20 +124,19 @@
             var num1, num2, quotient;
             do {
                 quotient = getRandomInt(2, 20);
-            } while (quotient === 10); // 答が10になるのを避ける
+            } while (quotient === 10);
 
             do {
                 num2 = getRandomInt(10, 99);
                 num1 = num2 * quotient;
-            } while (num1 < 100 || num1 > 999); // 割られる数が三桁の範囲内
+            } while (num1 < 100 || num1 > 999);
 
             var problem = num1 + ' ÷ ' + num2;
-            var answer = quotient; // num1 / num2 と同じ
+            var answer = quotient;
             quizData.push({ problem: problem, answer: answer });
         }
     }
 
-    // 問題の表示
     function displayProblem() {
         if (currentProblemIndex < quizData.length) {
             var problem = quizData[currentProblemIndex];
@@ -141,7 +149,6 @@
         }
     }
 
-    // 開始ボタン
     startButton.addEventListener('click', function() {
         generateProblems();
         currentProblemIndex = 0;
@@ -149,7 +156,6 @@
         answerInput.classList.remove('hidden');
         mainHeading.textContent = "問題を解いてください";
 
-        // 問題表示欄の復活
         problemContainer.classList.remove('hidden');
         statusInfo.classList.remove('hidden');
         resultContainer.classList.add('hidden');
@@ -160,11 +166,8 @@
         displayProblem();
     });
 
-    // 回答入力
     answerInput.addEventListener('keydown', function(e) {
-        // Enterキーの判定を e.keyCode === 13 に変更
         if (e.keyCode === 13) {
-            // 入力が空でないことを確認
             if (answerInput.value.trim() === '') {
                 return; 
             }
@@ -172,7 +175,6 @@
             var userAnswer = parseInt(answerInput.value, 10);
             var correctAnswer = quizData[currentProblemIndex].answer;
 
-            // 回答記録
             quizData[currentProblemIndex].userAnswer = userAnswer;
             quizData[currentProblemIndex].isCorrect = (userAnswer === correctAnswer);
 
@@ -181,7 +183,6 @@
         }
     });
 
-    // テスト終了
     function endQuiz() {
         var endTime = new Date();
         var timeDiff = (endTime - startTime) / 1000;
@@ -200,15 +201,16 @@
         correctAnswersDisplay.textContent = '正解数: ' + correctCount + ' / ' + totalProblems + ' 問';
         accuracyRateDisplay.textContent = '正答率: ' + accuracy.toFixed(1) + ' %';
 
-        // 詳細結果も表示
+        // 詳細結果を表示
         showDetailResults();
         
-        // スタートボタンを再表示
+        // ★★★ データ送信関数を呼び出し ★★★
+        sendQuizData(timeDiff, correctCount, totalProblems, accuracy);
+        
         startButton.textContent = "もう一度開始";
         startButton.classList.remove('hidden');
     }
 
-    // 詳細結果テーブル表示
     function showDetailResults() {
         var detailDiv = document.getElementById('detail-results');
         var tbody = document.querySelector('#detail-table tbody');
@@ -224,8 +226,46 @@
         });
         detailDiv.classList.remove('hidden');
     }
+    
+    // ★★★ Google Forms にデータを送信する新しい関数 ★★★
+    function sendQuizData(timeDiff, correctCount, totalProblems, accuracy) {
+        
+        // --- サマリー情報 ---
+        var summary = '--- 結果サマリー ---\n' +
+                      '日時: ' + new Date().toLocaleString() + '\n' +
+                      '時間: ' + timeDiff.toFixed(2) + '秒\n' +
+                      '正解数: ' + correctCount + '/' + totalProblems + '問\n' +
+                      '正答率: ' + accuracy.toFixed(1) + '%\n\n' +
+                      '--- 詳細結果テーブル ---';
+                      
+        // --- 詳細結果リストを作成 ---
+        quizData.forEach(function(q, i) {
+            var mark = q.isCorrect ? '○' : '×';
+            summary += '\n' + 
+                       (i + 1) + '. ' + q.problem + ' | 回答:' + (q.userAnswer !== undefined ? q.userAnswer : '未入力') + 
+                       ' | 正答:' + q.answer + 
+                       ' | 正誤:' + mark;
+        });
+
+        // フォームデータを作成
+        var formData = new FormData();
+        // Google Formsのentry IDと、整形した結果データを紐づける
+        formData.append(ENTRY_ID, summary); 
+
+        // フォームにデータを非同期送信 (CORS対策のため no-cors モードを使用)
+        fetch(FORM_ACTION_URL, {
+            method: 'POST',
+            mode: 'no-cors', 
+            body: formData
+        }).then(function(response) {
+            console.log('回答データが送信されました。', response);
+        }).catch(function(error) {
+            console.error('回答データの送信に失敗しました:', error);
+        });
+    }
 
 </script>
+
 
 </body>
 </html>
