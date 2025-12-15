@@ -25,7 +25,6 @@
         <p id="accuracy-rate"></p>
     </div>
 
-    <!-- 詳細結果画面 -->
     <div id="detail-results" class="hidden">
         <h3>詳細結果</h3>
         <table id="detail-table">
@@ -75,19 +74,29 @@
                 problem = `${num1} + ${num2}`;
                 answer = num1 + num2;
             } else {
-                problem = `${num2} - ${num1}`;
+                // 問題が負にならないように、三桁 - 二桁 の形にする
+                problem = `${num2} - ${num1}`; 
                 answer = num2 - num1;
             }
             quizData.push({ problem, answer });
         }
 
-        // 2. 三桁 + 三桁 (6-10問目)
+        // 2. 三桁 + 三桁 または 三桁 - 三桁 (6-10問目)
         for (let i = 0; i < 5; i++) {
             const num1 = getRandomInt(100, 999);
             const num2 = getRandomInt(100, 999);
             const operator = Math.random() < 0.5 ? '+' : '-';
-            const problem = `${num1} ${operator} ${num2}`;
-            const answer = operator === '+' ? num1 + num2 : num1 - num2;
+            let problem, answer;
+            if (operator === '+') {
+                problem = `${num1} + ${num2}`;
+                answer = num1 + num2;
+            } else {
+                // 引き算で答えが負にならないように大きい方から小さい方を引く
+                const larger = Math.max(num1, num2);
+                const smaller = Math.min(num1, num2);
+                problem = `${larger} - ${smaller}`;
+                answer = larger - smaller;
+            }
             quizData.push({ problem, answer });
         }
 
@@ -110,7 +119,7 @@
             do {
                 num2 = getRandomInt(10, 99);
                 num1 = num2 * quotient;
-            } while (num1 < 100 || num1 > 999);
+            } while (num1 < 100 || num1 > 999); // 割られる数が三桁の範囲内
 
             const problem = `${num1} ÷ ${num2}`;
             const answer = quotient; // num1 / num2 と同じ
@@ -118,7 +127,7 @@
         }
     }
 
-    // 問題の表示
+    // 問題の表示するやつ
     function displayProblem() {
         if (currentProblemIndex < quizData.length) {
             const problem = quizData[currentProblemIndex];
@@ -153,6 +162,11 @@
     // 回答入力
     answerInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
+            // 入力が空でないことを確認
+            if (answerInput.value.trim() === '') {
+                return; 
+            }
+            
             const userAnswer = parseInt(answerInput.value, 10);
             const correctAnswer = quizData[currentProblemIndex].answer;
 
@@ -186,14 +200,18 @@
 
         // 詳細結果も表示
         showDetailResults();
+        
+        // スタートボタンを再表示
+        startButton.textContent = "もう一度開始";
+        startButton.classList.remove('hidden');
     }
 
-    // 詳細結果テーブル表示
+    // 詳細結果テーブル表示するやつ
     function showDetailResults() {
         const detailDiv = document.getElementById('detail-results');
         const tbody = document.querySelector('#detail-table tbody');
         tbody.innerHTML = '';
-        quizData.forEach((q) => {
+        quizData.forEach((q, i) => {
             const mark = q.isCorrect ? '○' : '×';
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -206,6 +224,7 @@
         });
         detailDiv.classList.remove('hidden');
     }
+
 </script>
 
 </body>
