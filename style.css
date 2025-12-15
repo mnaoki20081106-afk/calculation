@@ -64,8 +64,7 @@ h1 {
 .hidden {
     display: none;
 }
-
-/* 詳細結果テーブル */
+/* 詳細結果テーブルの追加装飾 */
 #detail-results {
     margin-top: 30px;
     font-size: 1em;
