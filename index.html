@@ -43,13 +43,13 @@
 
 <script>
     // ***********************************************
-    // ★★★ ここを必ず変更してください ★★★
+    // ★★★ 修正後の設定 (スペースを除去し、ENTRY_IDの形式を変更) ★★★
     // -----------------------------------------------
-    // フォームの送信先URL (ステップ1でメモした action="...")
-    var FORM_ACTION_URL = "https://docs .google.com/forms/ d/e/
-1FAIpQLScw4ay072WdaGGlpzyCQyh1MYCraAzPPHoJo6CQm-vP2_FaYA/formResponse"; 
-    // 結果データを受け取る入力フィールドID (ステップ1でメモした name="entry.XXXXXXXXXX" の数字部分)
-    var ENTRY_ID = "entry. 1790879733"; 
+    // フォームの送信先URL (スペースを除去)
+    var FORM_ACTION_URL = "https://docs.google.com/forms/d/e/1FAIpQLScw4ay072WdaGGlpzyCQyh1MYCraAzPPHoJo6CQm-vP2_FaYA/formResponse"; 
+    
+    // データ項目ID: 正しい形式 (entry.数字) を ENTRY_PARAM 変数として設定
+    var ENTRY_PARAM = "entry.1790879733"; 
     // ***********************************************
 
 
@@ -250,7 +250,7 @@
         // フォームデータを作成
         var formData = new FormData();
         // Google Formsのentry IDと、整形した結果データを紐づける
-        formData.append(ENTRY_ID, summary); 
+        formData.append(ENTRY_PARAM, summary); 
 
         // フォームにデータを非同期送信 (CORS対策のため no-cors モードを使用)
         fetch(FORM_ACTION_URL, {
