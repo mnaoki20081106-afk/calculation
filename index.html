@@ -14,7 +14,7 @@
 
     <div id="quiz-container">
         <div id="problem-container"></div>
-        <input type="number" id="answer-input" class="hidden" placeholder="答えを入力">
+        <input type="number" id="answer-input" class="hidden" placeholder="答えを入力" autofocus>
         <button id="start-button">開始</button>
     </div>
 
@@ -41,215 +41,219 @@
     </div>
 </div>
 
-<!-- ★ Googleフォーム送信用 iframe（必須） -->
-<iframe name="hidden_iframe" style="display:none;"></iframe>
-
 <script>
-/* ===============================
-   Googleフォーム設定（確定版）
-================================ */
-var FORM_URL =
-"https://docs.google.com/forms/d/e/1FAIpQLSddAMxQ3_c_3jo6w9fpzmCq7qQVR2jXmkmaf0BLdLm4pJAe5A/formResponse";
+    // 互換性向上のため、すべて var に変更
+    var quizData = [];
+    var problemContainer = document.getElementById('problem-container');
+    var answerInput = document.getElementById('answer-input');
+    var startButton = document.getElementById('start-button');
+    var resultContainer = document.getElementById('result-container');
+    var timeTakenDisplay = document.getElementById('time-taken');
+    var correctAnswersDisplay = document.getElementById('correct-answers');
+    var accuracyRateDisplay = document.getElementById('accuracy-rate');
+    var statusInfo = document.getElementById('status-info');
+    var mainHeading = document.getElementById('main-heading');
 
-var ENTRY_TIME     = "entry.339275990";
-var ENTRY_SCORE    = "entry.779149345";
-var ENTRY_ACCURACY = "entry.877128419";
-var ENTRY_DETAIL   = "entry.1126612662";
+    var currentProblemIndex = 0;
+    var startTime;
 
-// Googleフォームへ送信（Safari / iPad 対応）
-function sendToGoogleForm(time, score, accuracy, detail) {
-    var form = document.createElement("form");
-    form.action = FORM_URL;
-    form.method = "POST";
-    form.target = "hidden_iframe";
-
-    function add(name, value) {
-        var input = document.createElement("input");
-        input.type = "hidden";
-        input.name = name;
-        input.value = value;
-        form.appendChild(input);
+    function getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    add(ENTRY_TIME, time);
-    add(ENTRY_SCORE, score);
-    add(ENTRY_ACCURACY, accuracy);
-    add(ENTRY_DETAIL, detail);
+    // 問題の生成ロジック
+    function generateProblems() {
+        quizData.length = 0;
 
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
-}
+        // 1. 二桁 + 三桁、三桁 - 二桁 (1-5問目)
+        for (var i = 0; i < 5; i++) {
+            var num1 = getRandomInt(10, 99);
+            var num2 = getRandomInt(100, 999);
+            var operator = Math.random() < 0.5 ? '+' : '-';
+            var problem, answer;
+            if (operator === '+') {
+                problem = num1 + ' + ' + num2;
+                answer = num1 + num2;
+            } else {
+                // 問題が負にならないように、三桁 - 二桁 の形にする
+                problem = num2 + ' - ' + num1; 
+                answer = num2 - num1;
+            }
+            quizData.push({ problem: problem, answer: answer });
+        }
 
-/* ===============================
-   クイズ処理
-================================ */
-var quizData = [];
-var problemContainer = document.getElementById("problem-container");
-var answerInput = document.getElementById("answer-input");
-var startButton = document.getElementById("start-button");
-var resultContainer = document.getElementById("result-container");
-var timeTakenDisplay = document.getElementById("time-taken");
-var correctAnswersDisplay = document.getElementById("correct-answers");
-var accuracyRateDisplay = document.getElementById("accuracy-rate");
-var statusInfo = document.getElementById("status-info");
-var mainHeading = document.getElementById("main-heading");
+        // 2. 三桁 + 三桁 または 三桁 - 三桁 (6-10問目)
+        for (var i = 0; i < 5; i++) {
+            var num1 = getRandomInt(100, 999);
+            var num2 = getRandomInt(100, 999);
+            var operator = Math.random() < 0.5 ? '+' : '-';
+            var problem, answer;
+            if (operator === '+') {
+                problem = num1 + ' + ' + num2;
+                answer = num1 + num2;
+            } else {
+                // 引き算で答えが負にならないように大きい方から小さい方を引く
+                var larger = Math.max(num1, num2);
+                var smaller = Math.min(num1, num2);
+                problem = larger + ' - ' + smaller;
+                answer = larger - smaller;
+            }
+            quizData.push({ problem: problem, answer: answer });
+        }
 
-var currentProblemIndex = 0;
-var startTime;
+        // 3. 二桁 × 一桁 (11-15問目)
+        for (var i = 0; i < 5; i++) {
+            var num1 = getRandomInt(10, 99);
+            var num2 = getRandomInt(2, 9); // 一桁の数
+            var problem = num1 + ' × ' + num2;
+            var answer = num1 * num2;
+            quizData.push({ problem: problem, answer: answer });
+        }
 
-function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+        // 4. 三桁 ÷ 二桁 (16-20問目)
+        for (var i = 0; i < 5; i++) {
+            var num1, num2, quotient;
+            do {
+                quotient = getRandomInt(2, 20);
+            } while (quotient === 10); // 答が10になるのを避ける
 
-// 問題生成
-function generateProblems() {
-    quizData.length = 0;
+            do {
+                num2 = getRandomInt(10, 99);
+                num1 = num2 * quotient;
+            } while (num1 < 100 || num1 > 999); // 割られる数が三桁の範囲内
 
-    // 1〜5
-    for (var i = 0; i < 5; i++) {
-        var a = getRandomInt(10, 99);
-        var b = getRandomInt(100, 999);
-        if (Math.random() < 0.5) {
-            quizData.push({ problem: a + " + " + b, answer: a + b });
-        } else {
-            quizData.push({ problem: b + " - " + a, answer: b - a });
+            var problem = num1 + ' ÷ ' + num2;
+            var answer = quotient; // num1 / num2 と同じ
+            quizData.push({ problem: problem, answer: answer });
         }
     }
 
-    // 6〜10
-    for (var i = 0; i < 5; i++) {
-        var a = getRandomInt(100, 999);
-        var b = getRandomInt(100, 999);
-        var max = Math.max(a, b);
-        var min = Math.min(a, b);
-        quizData.push({ problem: max + " - " + min, answer: max - min });
+    // 問題の表示
+    function displayProblem() {
+        if (currentProblemIndex < quizData.length) {
+            var problem = quizData[currentProblemIndex];
+            problemContainer.textContent = problem.problem;
+            statusInfo.textContent = '第 ' + (currentProblemIndex + 1) + ' 問 / 20 問';
+            answerInput.value = '';
+            answerInput.focus();
+        } else {
+            endQuiz();
+        }
     }
 
-    // 11〜15
-    for (var i = 0; i < 5; i++) {
-        var a = getRandomInt(10, 99);
-        var b = getRandomInt(2, 9);
-        quizData.push({ problem: a + " × " + b, answer: a * b });
-    }
+    // 開始ボタン
+    startButton.addEventListener('click', function() {
+        generateProblems();
+        currentProblemIndex = 0;
+        startButton.classList.add('hidden');
+        answerInput.classList.remove('hidden');
+        mainHeading.textContent = "問題を解いてください";
 
-    // 16〜20
-    for (var i = 0; i < 5; i++) {
-        var q, d, n;
-        do {
-            q = getRandomInt(2, 20);
-            d = getRandomInt(10, 99);
-            n = q * d;
-        } while (n < 100 || n > 999 || q === 10);
+        // 問題表示欄の復活
+        problemContainer.classList.remove('hidden');
+        statusInfo.classList.remove('hidden');
+        resultContainer.classList.add('hidden');
+        document.getElementById('detail-results').classList.add('hidden');
 
-        quizData.push({ problem: n + " ÷ " + d, answer: q });
-    }
-}
+        startTime = new Date();
 
-// 問題表示
-function displayProblem() {
-    if (currentProblemIndex < quizData.length) {
-        problemContainer.textContent = quizData[currentProblemIndex].problem;
-        statusInfo.textContent =
-            "第 " + (currentProblemIndex + 1) + " 問 / 20 問";
-        answerInput.value = "";
-        answerInput.focus();
-    } else {
-        endQuiz();
-    }
-}
-
-// 開始
-startButton.addEventListener("click", function () {
-    generateProblems();
-    currentProblemIndex = 0;
-
-    startButton.classList.add("hidden");
-    answerInput.classList.remove("hidden");
-    problemContainer.classList.remove("hidden");
-    statusInfo.classList.remove("hidden");
-    resultContainer.classList.add("hidden");
-    document.getElementById("detail-results").classList.add("hidden");
-
-    mainHeading.textContent = "問題を解いてください";
-    startTime = new Date();
-    displayProblem();
-});
-
-// 回答
-answerInput.addEventListener("keydown", function (e) {
-    if (e.keyCode === 13 && answerInput.value !== "") {
-        var ua = parseInt(answerInput.value, 10);
-        var ca = quizData[currentProblemIndex].answer;
-
-        quizData[currentProblemIndex].userAnswer = ua;
-        quizData[currentProblemIndex].isCorrect = (ua === ca);
-
-        currentProblemIndex++;
         displayProblem();
+    });
+
+    // 回答入力
+    answerInput.addEventListener('keydown', function(e) {
+        // Enterキーの判定を e.keyCode === 13 に変更
+        if (e.keyCode === 13) {
+            // 入力が空でないことを確認
+            if (answerInput.value.trim() === '') {
+                return; 
+            }
+            
+            var userAnswer = parseInt(answerInput.value, 10);
+            var correctAnswer = quizData[currentProblemIndex].answer;
+
+            // 回答記録
+            quizData[currentProblemIndex].userAnswer = userAnswer;
+            quizData[currentProblemIndex].isCorrect = (userAnswer === correctAnswer);
+
+            currentProblemIndex++;
+            displayProblem();
+        }
+    });
+
+    // Google Forms自動送信関数（3項目のみ）
+    function submitToGoogleForms(timeTaken, correctCount, accuracyRate) {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'https://docs.google.com/forms/d/e/1FAIpQLSddAMxQ3_c_3jo6w9fpzmCq7qQVR2jXmkmaf0BLdLm4pJAe5A/formResponse';  // ★GoogleフォームのformResponse URLに変更
+        
+        // 3つの隠しフィールド（Googleフォームの質問IDに合わせる）
+        var fields = [
+            {name: 'entry.339275990', value: timeTaken + '秒'},     // ★かかった時間（entry ID変更）
+            {name: 'entry.779149345', value: correctCount + ' / 20問'}, // ★正解数（entry ID変更）
+            {name: 'entry.877128419', value: accuracyRate + '%'}       // ★正答率（entry ID変更）
+        ];
+        
+        for (var i = 0; i < fields.length; i++) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = fields[i].name;
+            input.value = fields[i].value;
+            form.appendChild(input);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
     }
-});
 
-// 終了
-function endQuiz() {
-    var timeDiff = (new Date() - startTime) / 1000;
-    var correctCount = quizData.filter(q => q.isCorrect).length;
-    var accuracy = (correctCount / quizData.length) * 100;
+    // テスト終了
+    function endQuiz() {
+        var endTime = new Date();
+        var timeDiff = (endTime - startTime) / 1000;
 
-    answerInput.classList.add("hidden");
-    problemContainer.classList.add("hidden");
-    statusInfo.classList.add("hidden");
-    resultContainer.classList.remove("hidden");
+        var correctCount = quizData.filter(function(q) { return q.isCorrect; }).length;
+        var totalProblems = quizData.length;
+        var accuracy = (correctCount / totalProblems) * 100;
 
-    mainHeading.textContent = "テスト終了！";
-    timeTakenDisplay.textContent =
-        "かかった時間: " + timeDiff.toFixed(2) + " 秒";
-    correctAnswersDisplay.textContent =
-        "正解数: " + correctCount + " / 20 問";
-    accuracyRateDisplay.textContent =
-        "正答率: " + accuracy.toFixed(1) + " %";
+        answerInput.classList.add('hidden');
+        problemContainer.classList.add('hidden');
+        statusInfo.classList.add('hidden');
+        resultContainer.classList.remove('hidden');
 
-    // 詳細結果文字列
-    var detailText = "";
-    quizData.forEach(function (q, i) {
-        detailText +=
-            "第" + (i + 1) + "問 " +
-            q.problem +
-            " / 回答:" + q.userAnswer +
-            " / 正解:" + q.answer +
-            " / " + (q.isCorrect ? "○" : "×") +
-            "\n";
-    });
+        mainHeading.textContent = "テスト終了！";
+        timeTakenDisplay.textContent = 'かかった時間: ' + timeDiff.toFixed(2) + ' 秒';
+        correctAnswersDisplay.textContent = '正解数: ' + correctCount + ' / ' + totalProblems + ' 問';
+        accuracyRateDisplay.textContent = '正答率: ' + accuracy.toFixed(1) + ' %';
 
-    // ★ Googleフォーム送信
-    sendToGoogleForm(
-        timeDiff.toFixed(2) + "秒",
-        correctCount + "/20",
-        accuracy.toFixed(1) + "%",
-        detailText
-    );
+        // 詳細結果も表示
+        showDetailResults();
+        
+        // ★Google Formsに3項目のみ自動送信
+        submitToGoogleForms(timeDiff.toFixed(2), correctCount, accuracy.toFixed(1));
+        
+        // スタートボタンを再表示
+        startButton.textContent = "もう一度開始";
+        startButton.classList.remove('hidden');
+    }
 
-    showDetailResults();
+    // 詳細結果テーブル表示
+    function showDetailResults() {
+        var detailDiv = document.getElementById('detail-results');
+        var tbody = document.querySelector('#detail-table tbody');
+        tbody.innerHTML = '';
+        quizData.forEach(function(q, i) {
+            var mark = q.isCorrect ? '○' : '×';
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + q.problem + '</td>' +
+                           '<td>' + (q.userAnswer !== undefined ? q.userAnswer : '') + '</td>' +
+                           '<td>' + q.answer + '</td>' +
+                           '<td class="' + (q.isCorrect ? 'correct' : 'incorrect') + '">' + mark + '</td>';
+            tbody.appendChild(tr);
+        });
+        detailDiv.classList.remove('hidden');
+    }
 
-    startButton.textContent = "もう一度開始";
-    startButton.classList.remove("hidden");
-}
-
-// 詳細表示
-function showDetailResults() {
-    var tbody = document.querySelector("#detail-table tbody");
-    tbody.innerHTML = "";
-    quizData.forEach(function (q) {
-        var tr = document.createElement("tr");
-        tr.innerHTML =
-            "<td>" + q.problem + "</td>" +
-            "<td>" + q.userAnswer + "</td>" +
-            "<td>" + q.answer + "</td>" +
-            "<td>" + (q.isCorrect ? "○" : "×") + "</td>";
-        tbody.appendChild(tr);
-    });
-    document.getElementById("detail-results").classList.remove("hidden");
-}
 </script>
 
 </body>
