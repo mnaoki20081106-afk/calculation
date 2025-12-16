@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>計算問題：計算20問</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* CSSは提供されていませんが、必要に応じて追加 */
+        .hidden { display: none; }
+        .correct { color: green; font-weight: bold; }
+        .incorrect { color: red; font-weight: bold; }
+        /* 例として、テーブルのスタイルを追加 */
+        #detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        #detail-table th, #detail-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
 </head>
 <body>
 
@@ -23,7 +40,19 @@
         <p id="time-taken"></p>
         <p id="correct-answers"></p>
         <p id="accuracy-rate"></p>
-    </div>
+
+        <form 
+            id="result-form" 
+            action="https://docs.google.com/forms/d/e/1FAIpQLSddAMxQ3_c_3jo6w9fpzmCq7qQVR2jXmkmaf0BLdLm4pJAe5A/formResponse"  
+            method="POST" 
+            target="_blank"  
+            class="hidden"
+        >
+            <input type="hidden" name="entry.339275990" id="form-time-taken">
+            <input type="hidden" name="entry.779149345" id="form-correct-answers">
+            <input type="hidden" name="entry.877128419" id="form-accuracy-rate">
+            </form>
+        </div>
 
     <div id="detail-results" class="hidden">
         <h3>詳細結果</h3>
@@ -54,6 +83,13 @@
     var statusInfo = document.getElementById('status-info');
     var mainHeading = document.getElementById('main-heading');
 
+    // ★★★ 新しいフォーム要素の取得 ★★★
+    var resultForm = document.getElementById('result-form');
+    var formTimeTakenInput = document.getElementById('form-time-taken');
+    var formCorrectAnswersInput = document.getElementById('form-correct-answers');
+    var formAccuracyRateInput = document.getElementById('form-accuracy-rate');
+    // ★★★ 
+
     var currentProblemIndex = 0;
     var startTime;
 
@@ -61,7 +97,7 @@
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    // 問題の生成ロジック
+    // 問題の生成ロジック (省略なし)
     function generateProblems() {
         quizData.length = 0;
 
@@ -128,7 +164,7 @@
         }
     }
 
-    // 問題の表示
+    // 問題の表示 (省略なし)
     function displayProblem() {
         if (currentProblemIndex < quizData.length) {
             var problem = quizData[currentProblemIndex];
@@ -141,7 +177,7 @@
         }
     }
 
-    // 開始ボタン
+    // 開始ボタン (省略なし)
     startButton.addEventListener('click', function() {
         generateProblems();
         currentProblemIndex = 0;
@@ -160,7 +196,7 @@
         displayProblem();
     });
 
-    // 回答入力
+    // 回答入力 (省略なし)
     answerInput.addEventListener('keydown', function(e) {
         // Enterキーの判定を e.keyCode === 13 に変更
         if (e.keyCode === 13) {
@@ -180,32 +216,6 @@
             displayProblem();
         }
     });
-
-    // Google Forms自動送信関数（3項目のみ）
-    function submitToGoogleForms(timeTaken, correctCount, accuracyRate) {
-        var form = document.createElement('form');
-        form.method = 'POST';
-        form.action = 'https://docs.google.com/forms/d/e/1FAIpQLSddAMxQ3_c_3jo6w9fpzmCq7qQVR2jXmkmaf0BLdLm4pJAe5A/formResponse';  // ★GoogleフォームのformResponse URLに変更
-        
-        // 3つの隠しフィールド（Googleフォームの質問IDに合わせる）
-        var fields = [
-            {name: 'entry.339275990', value: timeTaken + '秒'},     // ★かかった時間（entry ID変更）
-            {name: 'entry.779149345', value: correctCount + ' / 20問'}, // ★正解数（entry ID変更）
-            {name: 'entry.877128419', value: accuracyRate + '%'}       // ★正答率（entry ID変更）
-        ];
-        
-        for (var i = 0; i < fields.length; i++) {
-            var input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = fields[i].name;
-            input.value = fields[i].value;
-            form.appendChild(input);
-        }
-        
-        document.body.appendChild(form);
-        form.submit();
-        document.body.removeChild(form);
-    }
 
     // テスト終了
     function endQuiz() {
@@ -229,15 +239,21 @@
         // 詳細結果も表示
         showDetailResults();
         
-        // ★Google Formsに3項目のみ自動送信
-        submitToGoogleForms(timeDiff.toFixed(2), correctCount, accuracy.toFixed(1));
-        
         // スタートボタンを再表示
         startButton.textContent = "もう一度開始";
         startButton.classList.remove('hidden');
+
+        // ★★★ Googleフォームへ結果を送信 ★★★
+        formTimeTakenInput.value = timeDiff.toFixed(2); // かかった時間 (例: 35.12)
+        formCorrectAnswersInput.value = correctCount + '/' + totalProblems; // 正解数 (例: 18/20)
+        formAccuracyRateInput.value = accuracy.toFixed(1); // 正答率 (例: 90.0)
+
+        // フォームを自動送信
+        resultForm.submit();
+        // ★★★
     }
 
-    // 詳細結果テーブル表示
+    // 詳細結果テーブル表示 (省略なし)
     function showDetailResults() {
         var detailDiv = document.getElementById('detail-results');
         var tbody = document.querySelector('#detail-table tbody');
