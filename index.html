@@ -41,42 +41,59 @@
     </div>
 </div>
 
+<!-- ★ Googleフォーム送信用 iframe（必須） -->
+<iframe name="hidden_iframe" style="display:none;"></iframe>
+
 <script>
-/* ====== Googleフォーム送信設定 ====== */
-// ★ここを自分のフォームに変更してください
-var FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSddAMxQ3_c_3jo6w9fpzmCq7qQVR2jXmkmaf0BLdLm4pJAe5A/formResponse";
+/* ===============================
+   Googleフォーム設定（確定版）
+================================ */
+var FORM_URL =
+"https://docs.google.com/forms/d/e/1FAIpQLSddAMxQ3_c_3jo6w9fpzmCq7qQVR2jXmkmaf0BLdLm4pJAe5A/formResponse";
 
 var ENTRY_TIME     = "entry.339275990";
 var ENTRY_SCORE    = "entry.779149345";
 var ENTRY_ACCURACY = "entry.877128419";
 var ENTRY_DETAIL   = "entry.1126612662";
 
-// Googleフォームへ送信
+// Googleフォームへ送信（Safari / iPad 対応）
 function sendToGoogleForm(time, score, accuracy, detail) {
-    var formData = new FormData();
-    formData.append(ENTRY_TIME, time);
-    formData.append(ENTRY_SCORE, score);
-    formData.append(ENTRY_ACCURACY, accuracy);
-    formData.append(ENTRY_DETAIL, detail);
+    var form = document.createElement("form");
+    form.action = FORM_URL;
+    form.method = "POST";
+    form.target = "hidden_iframe";
 
-    fetch(FORM_URL, {
-        method: "POST",
-        mode: "no-cors",
-        body: formData
-    });
+    function add(name, value) {
+        var input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+    }
+
+    add(ENTRY_TIME, time);
+    add(ENTRY_SCORE, score);
+    add(ENTRY_ACCURACY, accuracy);
+    add(ENTRY_DETAIL, detail);
+
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
 }
 
-/* ====== クイズ処理 ====== */
+/* ===============================
+   クイズ処理
+================================ */
 var quizData = [];
-var problemContainer = document.getElementById('problem-container');
-var answerInput = document.getElementById('answer-input');
-var startButton = document.getElementById('start-button');
-var resultContainer = document.getElementById('result-container');
-var timeTakenDisplay = document.getElementById('time-taken');
-var correctAnswersDisplay = document.getElementById('correct-answers');
-var accuracyRateDisplay = document.getElementById('accuracy-rate');
-var statusInfo = document.getElementById('status-info');
-var mainHeading = document.getElementById('main-heading');
+var problemContainer = document.getElementById("problem-container");
+var answerInput = document.getElementById("answer-input");
+var startButton = document.getElementById("start-button");
+var resultContainer = document.getElementById("result-container");
+var timeTakenDisplay = document.getElementById("time-taken");
+var correctAnswersDisplay = document.getElementById("correct-answers");
+var accuracyRateDisplay = document.getElementById("accuracy-rate");
+var statusInfo = document.getElementById("status-info");
+var mainHeading = document.getElementById("main-heading");
 
 var currentProblemIndex = 0;
 var startTime;
@@ -89,6 +106,7 @@ function getRandomInt(min, max) {
 function generateProblems() {
     quizData.length = 0;
 
+    // 1〜5
     for (var i = 0; i < 5; i++) {
         var a = getRandomInt(10, 99);
         var b = getRandomInt(100, 999);
@@ -99,6 +117,7 @@ function generateProblems() {
         }
     }
 
+    // 6〜10
     for (var i = 0; i < 5; i++) {
         var a = getRandomInt(100, 999);
         var b = getRandomInt(100, 999);
@@ -107,12 +126,14 @@ function generateProblems() {
         quizData.push({ problem: max + " - " + min, answer: max - min });
     }
 
+    // 11〜15
     for (var i = 0; i < 5; i++) {
         var a = getRandomInt(10, 99);
         var b = getRandomInt(2, 9);
         quizData.push({ problem: a + " × " + b, answer: a * b });
     }
 
+    // 16〜20
     for (var i = 0; i < 5; i++) {
         var q, d, n;
         do {
@@ -129,7 +150,8 @@ function generateProblems() {
 function displayProblem() {
     if (currentProblemIndex < quizData.length) {
         problemContainer.textContent = quizData[currentProblemIndex].problem;
-        statusInfo.textContent = "第 " + (currentProblemIndex + 1) + " 問 / 20 問";
+        statusInfo.textContent =
+            "第 " + (currentProblemIndex + 1) + " 問 / 20 問";
         answerInput.value = "";
         answerInput.focus();
     } else {
@@ -141,6 +163,7 @@ function displayProblem() {
 startButton.addEventListener("click", function () {
     generateProblems();
     currentProblemIndex = 0;
+
     startButton.classList.add("hidden");
     answerInput.classList.remove("hidden");
     problemContainer.classList.remove("hidden");
@@ -179,11 +202,14 @@ function endQuiz() {
     resultContainer.classList.remove("hidden");
 
     mainHeading.textContent = "テスト終了！";
-    timeTakenDisplay.textContent = "かかった時間: " + timeDiff.toFixed(2) + " 秒";
-    correctAnswersDisplay.textContent = "正解数: " + correctCount + " / 20 問";
-    accuracyRateDisplay.textContent = "正答率: " + accuracy.toFixed(1) + " %";
+    timeTakenDisplay.textContent =
+        "かかった時間: " + timeDiff.toFixed(2) + " 秒";
+    correctAnswersDisplay.textContent =
+        "正解数: " + correctCount + " / 20 問";
+    accuracyRateDisplay.textContent =
+        "正答率: " + accuracy.toFixed(1) + " %";
 
-    // 詳細結果文字列作成
+    // 詳細結果文字列
     var detailText = "";
     quizData.forEach(function (q, i) {
         detailText +=
@@ -195,30 +221,13 @@ function endQuiz() {
             "\n";
     });
 
-    // Googleフォーム送信
-   function sendToGoogleForm(time, score, accuracy, detail) {
-    var form = document.createElement("form");
-    form.action = FORM_URL;
-    form.method = "POST";
-    form.target = "hidden_iframe";
-
-    function addInput(name, value) {
-        var input = document.createElement("input");
-        input.type = "hidden";
-        input.name = name;
-        input.value = value;
-        form.appendChild(input);
-    }
-
-    addInput(ENTRY_TIME, time);
-    addInput(ENTRY_SCORE, score);
-    addInput(ENTRY_ACCURACY, accuracy);
-    addInput(ENTRY_DETAIL, detail);
-
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
-}
+    // ★ Googleフォーム送信
+    sendToGoogleForm(
+        timeDiff.toFixed(2) + "秒",
+        correctCount + "/20",
+        accuracy.toFixed(1) + "%",
+        detailText
+    );
 
     showDetailResults();
 
@@ -243,8 +252,5 @@ function showDetailResults() {
 }
 </script>
 
-<iframe name="hidden_iframe" style="display:none;"></iframe>
-
-    
 </body>
 </html>
