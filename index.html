@@ -6,11 +6,10 @@
     <title>計算問題：計算20問</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* CSSは提供されていませんが、必要に応じて追加 */
         .hidden { display: none; }
         .correct { color: green; font-weight: bold; }
         .incorrect { color: red; font-weight: bold; }
-        /* 例として、テーブルのスタイルを追加 */
+        /* 詳細結果テーブルの基本スタイル */
         #detail-table {
             width: 100%;
             border-collapse: collapse;
@@ -52,7 +51,9 @@
             <input type="hidden" name="entry.779149345" id="form-correct-answers">
             <input type="hidden" name="entry.877128419" id="form-accuracy-rate">
             </form>
-        </div>
+    </div>
+
+    <iframe name="google-form-target" id="google-form-target" style="display:none;"></iframe>
 
     <div id="detail-results" class="hidden">
         <h3>詳細結果</h3>
@@ -71,7 +72,6 @@
 </div>
 
 <script>
-    // 互換性向上のため、すべて var に変更
     var quizData = [];
     var problemContainer = document.getElementById('problem-container');
     var answerInput = document.getElementById('answer-input');
@@ -83,12 +83,11 @@
     var statusInfo = document.getElementById('status-info');
     var mainHeading = document.getElementById('main-heading');
 
-    // ★★★ 新しいフォーム要素の取得 ★★★
+    // Googleフォーム関連要素
     var resultForm = document.getElementById('result-form');
     var formTimeTakenInput = document.getElementById('form-time-taken');
     var formCorrectAnswersInput = document.getElementById('form-correct-answers');
     var formAccuracyRateInput = document.getElementById('form-accuracy-rate');
-    // ★★★ 
 
     var currentProblemIndex = 0;
     var startTime;
@@ -97,102 +96,96 @@
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    // 問題の生成ロジック
-function generateProblems() {
-    quizData.length = 0;
+    // 問題の生成ロジック (繰り上がりを強制)
+    function generateProblems() {
+        quizData.length = 0;
 
-    // 1. 二桁 + 三桁、三桁 - 二桁 (1-5問目)
-    for (var i = 0; i < 5; i++) {
-        var problem, answer;
-        var operator = Math.random() < 0.5 ? '+' : '-';
-        
-        if (operator === '+') {
-            // ★★★ 修正箇所: 繰り上がりを強制する二桁 + 三桁の加算 ★★★
-            var num1, num2;
+        // 1. 二桁 + 三桁 (繰り上がり強制) または 三桁 - 二桁 (1-5問目)
+        for (var i = 0; i < 5; i++) {
+            var problem, answer;
+            var operator = Math.random() < 0.5 ? '+' : '-';
             
-            // 繰り上がりを強制するロジック (例: 一の位が10以上になるように調整)
-            do {
-                num1 = getRandomInt(10, 99);   // 二桁
-                num2 = getRandomInt(100, 999); // 三桁
-            } while ( (num1 % 10) + (num2 % 10) < 10 ); // 一の位で繰り上がりが発生しない限り再試行
+            if (operator === '+') {
+                // 繰り上がりを強制する二桁 + 三桁の加算 (一の位で繰り上がりを強制)
+                var num1, num2;
+                do {
+                    num1 = getRandomInt(10, 99);   // 二桁
+                    num2 = getRandomInt(100, 999); // 三桁
+                } while ( (num1 % 10) + (num2 % 10) < 10 );
 
-            problem = num1 + ' + ' + num2;
-            answer = num1 + num2;
+                problem = num1 + ' + ' + num2;
+                answer = num1 + num2;
 
-        } else {
-            // 元のロジック: 三桁 - 二桁 (負にならないように)
+            } else {
+                // 三桁 - 二桁 (負にならないように)
+                var num1 = getRandomInt(10, 99);
+                var num2 = getRandomInt(100, 999);
+                problem = num2 + ' - ' + num1; 
+                answer = num2 - num1;
+            }
+            quizData.push({ problem: problem, answer: answer });
+        }
+
+        // 2. 三桁 + 三桁 (繰り上がり強制) または 三桁 - 三桁 (6-10問目)
+        for (var i = 0; i < 5; i++) {
+            var problem, answer;
+            var operator = Math.random() < 0.5 ? '+' : '-';
+            
+            if (operator === '+') {
+                // 繰り上がりを強制する三桁 + 三桁の加算 (一の位か十の位のどちらかで繰り上がりを強制)
+                var num1, num2;
+                do {
+                    num1 = getRandomInt(100, 999);
+                    num2 = getRandomInt(100, 999);
+                    
+                    var unitsSum = (num1 % 10) + (num2 % 10);
+                    var tensSum = Math.floor(num1 / 10) % 10 + Math.floor(num2 / 10) % 10 + (unitsSum >= 10 ? 1 : 0);
+                    
+                } while (unitsSum < 10 && tensSum < 10); // どちらの位でも繰り上がりが起きない場合は再試行
+
+                problem = num1 + ' + ' + num2;
+                answer = num1 + num2;
+
+            } else {
+                // 三桁 - 三桁 (負にならないように)
+                var num1 = getRandomInt(100, 999);
+                var num2 = getRandomInt(100, 999);
+                var larger = Math.max(num1, num2);
+                var smaller = Math.min(num1, num2);
+                problem = larger + ' - ' + smaller;
+                answer = larger - smaller;
+            }
+            quizData.push({ problem: problem, answer: answer });
+        }
+
+        // 3. 二桁 × 一桁 (11-15問目)
+        for (var i = 0; i < 5; i++) {
             var num1 = getRandomInt(10, 99);
-            var num2 = getRandomInt(100, 999);
-            problem = num2 + ' - ' + num1; 
-            answer = num2 - num1;
+            var num2 = getRandomInt(2, 9);
+            var problem = num1 + ' × ' + num2;
+            var answer = num1 * num2;
+            quizData.push({ problem: problem, answer: answer });
         }
-        quizData.push({ problem: problem, answer: answer });
-    }
 
-    // 2. 三桁 + 三桁 または 三桁 - 三桁 (6-10問目)
-    for (var i = 0; i < 5; i++) {
-        var problem, answer;
-        var operator = Math.random() < 0.5 ? '+' : '-';
-        
-        if (operator === '+') {
-            // ★★★ 修正箇所: 繰り上がりを強制する三桁 + 三桁の加算 ★★★
-            var num1, num2;
-
-            // 繰り上がりを強制するロジック (例: 少なくとも一の位か十の位で繰り上がりが発生)
+        // 4. 三桁 ÷ 二桁 (16-20問目)
+        for (var i = 0; i < 5; i++) {
+            var num1, num2, quotient;
             do {
-                num1 = getRandomInt(100, 999); // 三桁
-                num2 = getRandomInt(100, 999); // 三桁
-                
-                var unitsSum = (num1 % 10) + (num2 % 10);
-                var tensSum = Math.floor(num1 / 10) % 10 + Math.floor(num2 / 10) % 10 + (unitsSum >= 10 ? 1 : 0);
-                
-            } while (unitsSum < 10 && tensSum < 10); // 一の位、かつ十の位でも繰り上がりが起きない場合は再試行
+                quotient = getRandomInt(2, 20);
+            } while (quotient === 10); 
 
-            problem = num1 + ' + ' + num2;
-            answer = num1 + num2;
+            do {
+                num2 = getRandomInt(10, 99);
+                num1 = num2 * quotient;
+            } while (num1 < 100 || num1 > 999); 
 
-        } else {
-            // 元のロジック: 引き算で答えが負にならないように大きい方から小さい方を引く
-            var num1 = getRandomInt(100, 999);
-            var num2 = getRandomInt(100, 999);
-            var larger = Math.max(num1, num2);
-            var smaller = Math.min(num1, num2);
-            problem = larger + ' - ' + smaller;
-            answer = larger - smaller;
+            var problem = num1 + ' ÷ ' + num2;
+            var answer = quotient;
+            quizData.push({ problem: problem, answer: answer });
         }
-        quizData.push({ problem: problem, answer: answer });
     }
 
-    // 3. 二桁 × 一桁 (11-15問目) - 変更なし
-    for (var i = 0; i < 5; i++) {
-        var num1 = getRandomInt(10, 99);
-        var num2 = getRandomInt(2, 9); // 一桁の数
-        var problem = num1 + ' × ' + num2;
-        var answer = num1 * num2;
-        quizData.push({ problem: problem, answer: answer });
-    }
-
-    // 4. 三桁 ÷ 二桁 (16-20問目) - 変更なし
-    for (var i = 0; i < 5; i++) {
-        var num1, num2, quotient;
-        do {
-            quotient = getRandomInt(2, 20);
-        } while (quotient === 10); // 答が10になるのを避ける
-
-        do {
-            num2 = getRandomInt(10, 99);
-            num1 = num2 * quotient;
-        } while (num1 < 100 || num1 > 999); // 割られる数が三桁の範囲内
-
-        var problem = num1 + ' ÷ ' + num2;
-        var answer = quotient; // num1 / num2 と同じ
-        quizData.push({ problem: problem, answer: answer });
-    }
-}
-// displayProblem(), startButtonイベントリスナー, answerInputイベントリスナー, endQuiz(), showDetailResults() は変更ありません。
-
-
-    // 問題の表示 (省略なし)
+    // 問題の表示
     function displayProblem() {
         if (currentProblemIndex < quizData.length) {
             var problem = quizData[currentProblemIndex];
@@ -205,7 +198,7 @@ function generateProblems() {
         }
     }
 
-    // 開始ボタン (省略なし)
+    // 開始ボタン
     startButton.addEventListener('click', function() {
         generateProblems();
         currentProblemIndex = 0;
@@ -213,7 +206,6 @@ function generateProblems() {
         answerInput.classList.remove('hidden');
         mainHeading.textContent = "問題を解いてください";
 
-        // 問題表示欄の復活
         problemContainer.classList.remove('hidden');
         statusInfo.classList.remove('hidden');
         resultContainer.classList.add('hidden');
@@ -224,11 +216,9 @@ function generateProblems() {
         displayProblem();
     });
 
-    // 回答入力 (省略なし)
+    // 回答入力
     answerInput.addEventListener('keydown', function(e) {
-        // Enterキーの判定を e.keyCode === 13 に変更
         if (e.keyCode === 13) {
-            // 入力が空でないことを確認
             if (answerInput.value.trim() === '') {
                 return; 
             }
@@ -236,7 +226,6 @@ function generateProblems() {
             var userAnswer = parseInt(answerInput.value, 10);
             var correctAnswer = quizData[currentProblemIndex].answer;
 
-            // 回答記録
             quizData[currentProblemIndex].userAnswer = userAnswer;
             quizData[currentProblemIndex].isCorrect = (userAnswer === correctAnswer);
 
@@ -271,17 +260,15 @@ function generateProblems() {
         startButton.textContent = "もう一度開始";
         startButton.classList.remove('hidden');
 
-        // ★★★ Googleフォームへ結果を送信 ★★★
-        formTimeTakenInput.value = timeDiff.toFixed(2); // かかった時間 (例: 35.12)
-        formCorrectAnswersInput.value = correctCount + '/' + totalProblems; // 正解数 (例: 18/20)
-        formAccuracyRateInput.value = accuracy.toFixed(1); // 正答率 (例: 90.0)
+        // Googleフォームへ結果をバックグラウンド送信
+        formTimeTakenInput.value = timeDiff.toFixed(2);
+        formCorrectAnswersInput.value = correctCount + '/' + totalProblems;
+        formAccuracyRateInput.value = accuracy.toFixed(1);
 
-        // フォームを自動送信
-        resultForm.submit();
-        // ★★★
+        resultForm.submit(); // 結果は非表示の iframe に送信されるため、画面は遷移しません
     }
 
-    // 詳細結果テーブル表示 (省略なし)
+    // 詳細結果テーブル表示
     function showDetailResults() {
         var detailDiv = document.getElementById('detail-results');
         var tbody = document.querySelector('#detail-table tbody');
