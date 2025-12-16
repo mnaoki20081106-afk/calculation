@@ -196,12 +196,29 @@ function endQuiz() {
     });
 
     // Googleフォーム送信
-    sendToGoogleForm(
-        timeDiff.toFixed(2) + "秒",
-        correctCount + "/20",
-        accuracy.toFixed(1) + "%",
-        detailText
-    );
+   function sendToGoogleForm(time, score, accuracy, detail) {
+    var form = document.createElement("form");
+    form.action = FORM_URL;
+    form.method = "POST";
+    form.target = "hidden_iframe";
+
+    function addInput(name, value) {
+        var input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+    }
+
+    addInput(ENTRY_TIME, time);
+    addInput(ENTRY_SCORE, score);
+    addInput(ENTRY_ACCURACY, accuracy);
+    addInput(ENTRY_DETAIL, detail);
+
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+}
 
     showDetailResults();
 
@@ -226,5 +243,8 @@ function showDetailResults() {
 }
 </script>
 
+<iframe name="hidden_iframe" style="display:none;"></iframe>
+
+    
 </body>
 </html>
